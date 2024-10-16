@@ -1,0 +1,158 @@
+#
+# Copyright (C) 2022 Ing <https://github.com/wjz304>
+#
+# This is free software, licensed under the MIT License.
+# See /LICENSE for more information.
+#
+
+name: Build lkms
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "format %y.%-m.$i or auto"
+        required: false
+        type: string
+      prerelease:
+        description: "pre release"
+        default: false
+        type: boolean
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - version: 7.1
+            platform: armada37xx
+          #- version: 7.1
+          #  platform: armada38x
+          - version: 7.1
+            platform: rtd1296
+          - version: 7.1
+            platform: rtd1619b
+
+          - version: 7.2
+            platform: armada37xx
+          #- version: 7.2
+          #  platform: armada38x
+          - version: 7.2
+            platform: rtd1296
+          - version: 7.2
+            platform: rtd1619b
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@main
+
+      - name: Checkout
+        uses: actions/checkout@main
+        with:
+          repository: RROrg/rr-lkms
+          token: ${{ secrets.RRORG }}
+          path: rrr-lkms
+
+      - name: Init Env
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          sudo timedatectl set-timezone "Asia/Shanghai"
+
+      - name: Make lkms
+        run: |
+          ROOT_PATH=${{ github.workspace }}
+          VERSION=${{ matrix.version }}
+          PLATFORM=${{ matrix.platform }}
+
+          . ${ROOT_PATH}/rrr-lkms/compile.sh
+
+          echo "makeEnvDeploy"
+          makeEnvDeploy "${ROOT_PATH}" "${VERSION}" "${PLATFORM}"
+
+          echo "makemodules"
+          makelkms "${ROOT_PATH}" "${VERSION}" "${PLATFORM}" "${ROOT_PATH}/rrr-lkms" "${ROOT_PATH}/output"
+
+      - name: Upload to Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rp-lkms-${{ matrix.version }}-${{ matrix.platform }}
+          path: |
+            output/*
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@main
+
+      - name: Init Env
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          sudo timedatectl set-timezone "Asia/Shanghai"
+
+      - name: Calculate version
+        run: |
+          # Calculate version
+          VERSION=""
+          if [ -n "${{ inputs.version }}" ]; then
+            if [ "$(echo ${{ inputs.version }} | cut -d '.' -f 1,2)" = "$(date +'%y.%-m')" ]; then
+              VERSION="${{ inputs.version }}"
+            else
+              LATEST_TAG="$(curl -skLH "Authorization: token ${{ secrets.RRORG }}" "https://api.github.com/repos/RROrg/rrr-lkms/releases" | jq -r ".[0].tag_name" 2>/dev/null)"
+              if [ -n "${LATEST_TAG}" -a "$(echo ${LATEST_TAG} | cut -d '.' -f 1,2)" = "$(date +'%y.%-m')" ]; then  # format %y.%-m.$i
+                VERSION="$(echo ${LATEST_TAG} | awk -F '.' '{$3=$3+1}1' OFS='.')"
+              else
+                VERSION="$(date +'%y.%-m').0"
+              fi
+            fi
+          else
+            VERSION=""
+          fi
+
+          echo "VERSION: ${VERSION}"
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
+      - name: download to artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: output
+          pattern: rp-lkms-*
+          merge-multiple: true
+
+      - name: delete-artifact
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: |
+            rp-lkms-*
+
+      - name: Zip lkms
+        run: |
+          VERSION="${{ env.VERSION }}"
+          VERSION="${VERSION:-"test"}"
+
+          echo "${VERSION}" > "output/VERSION"
+          zip -9 rp-lkms-${VERSION}.zip -j output/*
+
+      - name: Upload to Artifacts
+        if: success() && env.VERSION == ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: rp-lkms
+          path: |
+            rp-lkms*.zip
+          retention-days: 5
+
+      - name: Release
+        if: success() && env.VERSION != ''
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ env.VERSION }}
+          prerelease: ${{ inputs.prerelease }}
+          artifacts: rp-lkms*.zip
+          owner: RROrg
+          repo: rrr-lkms
+          token: ${{ secrets.RRORG }}
