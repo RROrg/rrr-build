@@ -41,6 +41,8 @@ jobs:
             platform: rtd1296
           - version: 7.2
             platform: rtd1619b
+          - version: 7.3
+            platform: rtd1619b
 
     runs-on: ubuntu-latest
     steps:
@@ -69,7 +71,7 @@ jobs:
           . ${ROOT_PATH}/rrr-lkms/compile.sh
 
           echo "makeEnvDeploy"
-          makeEnvDeploy "${ROOT_PATH}" "${VERSION}" "${PLATFORM}"
+          TOKEN="${{ secrets.RRORG }}" makeEnvDeploy "${ROOT_PATH}" "${VERSION}" "${PLATFORM}"
 
           echo "makemodules"
           makelkms "${ROOT_PATH}" "${VERSION}" "${PLATFORM}" "${ROOT_PATH}/rrr-lkms" "${ROOT_PATH}/output"
@@ -109,8 +111,6 @@ jobs:
                 VERSION="$(date +'%y.%-m').0"
               fi
             fi
-          else
-            VERSION=""
           fi
 
           echo "VERSION: ${VERSION}"
