@@ -1,0 +1,88 @@
+#
+# Copyright (C) 2022 Ing <https://github.com/wjz304>
+#
+# This is free software, licensed under the MIT License.
+# See /LICENSE for more information.
+#
+
+name: Build grub
+
+on:
+  workflow_dispatch:
+    inputs:
+      push:
+        description: "push"
+        default: false
+        type: boolean
+      grubver:
+        description: "grub version"
+        default: "grub-2.14"
+        type: string
+      bioslst:
+        description: "bios list"
+        default: "aarch64-efi"
+        type: string
+      namestr:
+        description: "name string"
+        default: "RR"
+        type: string
+
+jobs:
+  grub:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Checkout
+        uses: actions/checkout@main
+
+      - name: Checkout
+        uses: actions/checkout@main
+        with:
+          repository: RROrg/buildroot
+          token: ${{ secrets.RRORG }}
+          path: buildroot
+
+      - name: Checkout
+        uses: actions/checkout@main
+        with:
+          repository: RROrg/rr
+          token: ${{ secrets.RRORG }}
+          path: rr
+
+      - name: Initialization environment
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          sudo timedatectl set-timezone "Asia/Shanghai"
+
+          sudo apt update
+          sudo apt install -y autoconf autoconf-archive automake autopoint build-essential pkg-config bison flex gettext gawk libtool dosfstools e2fsprogs
+          sudo apt install -y libfreetype6-dev unifont fonts-dejavu libfuse-dev libzfslinux-dev liblzma-dev libdevmapper-dev
+
+      - name: Make Grub
+        run: |
+          . buildroot/grub_ar.sh "${{ inputs.grubver}}" "${{ inputs.bioslst}}" "${{ inputs.namestr}}"
+
+      - name: Upload artifact
+        if: success() && inputs.push == false
+        uses: actions/upload-artifact@v4
+        with:
+          name: grub
+          path: |
+            grub.img.gz
+          retention-days: 5
+
+      - name: Check and Push
+        if: success() && inputs.push == true
+        run: |
+
+          [ -f "grub.img.gz" ] && mv -f grub.img.gz rr/files/initrd/opt/rr/grub.img.gz
+
+          cd rr
+          echo "Git push ..."
+          git pull
+          status=$(git status -s | grep -E 'grub.img.gz' | awk '{printf " %s", $2}')
+          if [ -n "${status}" ]; then
+            git add ${status}
+            git commit -m "update $(date +%Y-%m-%d" "%H:%M:%S)"
+            git push -f
+          fi
