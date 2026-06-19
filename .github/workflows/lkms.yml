@@ -68,7 +68,7 @@ jobs:
         with:
           repository: RROrg/rr-lkms
           token: ${{ secrets.RRORG }}
-          path: rrr-lkms
+          path: ar-lkms
 
       - name: Init Env
         run: |
@@ -82,13 +82,13 @@ jobs:
           VERSION=${{ matrix.version }}
           PLATFORM=${{ matrix.platform }}
 
-          . ${ROOT_PATH}/rrr-lkms/compile.sh
+          . ${ROOT_PATH}/ar-lkms/compile.sh
 
           echo "makeEnvDeploy"
           for i in $(seq 1 3); do makeEnvDeploy "${ROOT_PATH}" "${VERSION}" "${PLATFORM}" && break || { echo "Retry makeEnvDeploy ${i}/3"; sleep 5; }; done
 
           echo "makemodules"
-          makelkms "${ROOT_PATH}" "${VERSION}" "${PLATFORM}" "${ROOT_PATH}/rrr-lkms" "${ROOT_PATH}/output"
+          makelkms "${ROOT_PATH}" "${VERSION}" "${PLATFORM}" "${ROOT_PATH}/ar-lkms" "${ROOT_PATH}/output"
 
       - name: Upload to Artifacts
         uses: actions/upload-artifact@v7
@@ -118,7 +118,7 @@ jobs:
             if [ "$(echo ${{ inputs.version }} | cut -d '.' -f 1,2)" = "$(date +'%y.%-m')" ]; then
               VERSION="${{ inputs.version }}"
             else
-              LATEST_TAG="$(curl -skLH "Authorization: token ${{ secrets.RRORG }}" "https://api.github.com/repos/RROrg/rrr-lkms/releases" | jq -r ".[0].tag_name" 2>/dev/null)"
+              LATEST_TAG="$(curl -skLH "Authorization: token ${{ secrets.RRORG }}" "https://api.github.com/repos/RROrg/ar-lkms/releases" | jq -r ".[0].tag_name" 2>/dev/null)"
               if [ -n "${LATEST_TAG}" ] && [ "$(echo ${LATEST_TAG} | cut -d '.' -f 1,2)" = "$(date +'%y.%-m')" ]; then  # format %y.%-m.$i
                 VERSION="$(echo ${LATEST_TAG} | awk -F '.' '{$3=$3+1}1' OFS='.')"
               else
@@ -168,5 +168,5 @@ jobs:
           prerelease: ${{ inputs.prerelease }}
           artifacts: rp-lkms*.zip
           owner: RROrg
-          repo: rrr-lkms
+          repo: ar-lkms
           token: ${{ secrets.RRORG }}

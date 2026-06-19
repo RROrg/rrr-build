@@ -46,9 +46,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@main
         with:
-          repository: RROrg/rrr-cks
+          repository: RROrg/ar-cks
           token: ${{ secrets.RRORG }}
-          path: rrr-cks
+          path: ar-cks
 
       - name: Init Env
         run: |
@@ -92,7 +92,7 @@ jobs:
           . ${ROOT_PATH}/rp-modules/compile-ck.sh
           KVER="$(getKver "${ROOT_PATH}" "${VERSION}" "${PLATFORM}" "${ROOT_PATH}/dsm_linux")"
 
-            PARTY3RD_PATH="${ROOT_PATH}/rrr-cks/thirdparty/${PLATFORM}-${VERSION}-${KVER}"
+            PARTY3RD_PATH="${ROOT_PATH}/ar-cks/thirdparty/${PLATFORM}-${VERSION}-${KVER}"
 
           echo "copy 3rd modules"
           [ -d "${PARTY3RD_PATH}" ] && cp -rf ${PARTY3RD_PATH}/* ${ROOT_PATH}/output/modules/
@@ -130,7 +130,7 @@ jobs:
       - name: Upload to Artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: rrr-cks${{ matrix.config }}-${{ matrix.version }}-${{ matrix.platform }}
+          name: ar-cks${{ matrix.config }}-${{ matrix.version }}-${{ matrix.platform }}
           path: |
             *.tgz
             *.gz
@@ -145,9 +145,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@main
         with:
-          repository: RROrg/rrr-cks
+          repository: RROrg/ar-cks
           token: ${{ secrets.RRORG }}
-          path: rrr-cks
+          path: ar-cks
 
       - name: Init Env
         run: |
@@ -159,7 +159,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: output
-          pattern: rrr-cks-*
+          pattern: ar-cks-*
           merge-multiple: true
 
       - name: firmware
@@ -169,7 +169,7 @@ jobs:
           mkdir -p ${ROOT_PATH}/firmware
 
           echo "copy 3rd modules"
-          PARTY3RD_PATH="${ROOT_PATH}/rrr-cks/thirdparty/firmware"
+          PARTY3RD_PATH="${ROOT_PATH}/ar-cks/thirdparty/firmware"
           [ -d "${PARTY3RD_PATH}" ] && cp -rf ${PARTY3RD_PATH}/* ${ROOT_PATH}/firmware/
 
           echo "extract all modules"
@@ -198,7 +198,7 @@ jobs:
       - name: Upload to Artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: rrr-cks-firmware
+          name: ar-cks-firmware
           path: |
             firmware.tgz
 
@@ -223,7 +223,7 @@ jobs:
             if [ "$(echo ${{ inputs.version }} | cut -d '.' -f 1,2)" = "$(date +'%y.%-m')" ]; then
               VERSION="${{ inputs.version }}"
             else
-              LATEST_TAG="$(curl -skLH "Authorization: token ${{ secrets.RRORG }}" "https://api.github.com/repos/RROrg/rrr-cks/releases" | jq -r ".[0].tag_name" 2>/dev/null)"
+              LATEST_TAG="$(curl -skLH "Authorization: token ${{ secrets.RRORG }}" "https://api.github.com/repos/RROrg/ar-cks/releases" | jq -r ".[0].tag_name" 2>/dev/null)"
               if [ -n "${LATEST_TAG}" ] && [ "$(echo ${LATEST_TAG} | cut -d '.' -f 1,2)" = "$(date +'%y.%-m')" ]; then  # format %y.%-m.$i
                 VERSION="$(echo ${LATEST_TAG} | awk -F '.' '{$3=$3+1}1' OFS='.')"
               else
@@ -239,14 +239,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: output
-          pattern: rrr-cks-*
+          pattern: ar-cks-*
           merge-multiple: true
 
       - name: delete-artifact
         uses: geekyeggo/delete-artifact@v5
         with:
           name: |
-            rrr-cks-*
+            ar-cks-*
 
       - name: Zip modules
         run: |
@@ -254,15 +254,15 @@ jobs:
           VERSION="${VERSION:-"test"}"
 
           echo "${VERSION}" > "output/VERSION"
-          zip -9 rrr-cks-${VERSION}.zip -j output/*
+          zip -9 ar-cks-${VERSION}.zip -j output/*
 
       - name: Upload to Artifacts
         if: success() && env.VERSION == ''
         uses: actions/upload-artifact@v7
         with:
-          name: rrr-cks
+          name: ar-cks
           path: |
-            rrr-cks-*.zip
+            ar-cks-*.zip
           retention-days: 5
 
       - name: Release
@@ -271,7 +271,7 @@ jobs:
         with:
           tag: ${{ env.VERSION }}
           prerelease: ${{ inputs.prerelease }}
-          artifacts: rrr-cks*.zip
+          artifacts: ar-cks*.zip
           owner: RROrg
-          repo: rrr-cks
+          repo: ar-cks
           token: ${{ secrets.RRORG }}
