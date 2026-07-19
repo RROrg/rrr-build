@@ -58,6 +58,15 @@ jobs:
           - version: 7.3
             platform: rtd1619b
 
+          - version: 7.4
+            platform: armada37xx
+          #- version: 7.4
+          #  platform: armada38x
+          #- version: 7.4
+          #  platform: rtd1296
+          - version: 7.4
+            platform: rtd1619b
+
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -225,10 +234,10 @@ jobs:
           while read L; do
             [ -z "${L}" ] && continue
             if [ -e "${SOURCE}/${L}" ]; then
-              mkdir -p "$(dirname firmware/${L})"
+              mkdir -p "$(dirname "firmware/${L}")"
               cp -f "${SOURCE}/${L}" "firmware/${L}"
             else
-              [ -e "firmware/${L}" ] && echo "Used thirdparty ${L}" || echo "Missing ${L}"
+              [ -e "firmware/${L}" ] && echo "Used thirdparty ${L}" || echo "::warning ::Missing ${L}"
             fi
           done <<<$(find output -name \*.ko -exec /sbin/modinfo -F firmware {} 2>/dev/null \;)
 
@@ -275,14 +284,14 @@ jobs:
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
 
       - name: download to artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: output
           pattern: modules-*
           merge-multiple: true
 
       - name: delete-artifact
-        uses: geekyeggo/delete-artifact@v5
+        uses: geekyeggo/delete-artifact@v6
         with:
           name: |
             modules-*

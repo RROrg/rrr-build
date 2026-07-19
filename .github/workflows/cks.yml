@@ -30,6 +30,8 @@ jobs:
             platform: rtd1619b
           - version: 7.3
             platform: rtd1619b
+          - version: 7.4
+            platform: rtd1619b
 
     runs-on: ubuntu-latest
     steps:

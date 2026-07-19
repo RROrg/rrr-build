@@ -58,6 +58,15 @@ jobs:
           - version: 7.3
             platform: rtd1619b
 
+          - version: 7.4
+            platform: armada37xx
+          #- version: 7.4
+          #  platform: armada38x
+          #- version: 7.4
+          #  platform: rtd1296
+          - version: 7.4
+            platform: rtd1619b
+
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
